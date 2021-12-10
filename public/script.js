@@ -44,16 +44,26 @@ const settings = {
 
 //Loads defaults and shows starting account balance
 function initialize() {
-    window.localStorage.setItem('transactions', JSON.stringify(transactions));
-    localStorage.setItem('interestSettings', JSON.stringify(settings));
-    loadTransactions();
+    if (localStorage.getItem("transactions") !== null) {
+        loadTransactions();
     updateBalance();
+    } else {
+        localStorage.setItem("transactions", JSON.stringify([]));
+    }
+
+    if (localStorage.getItem("interestSettings") === null) {
+        localStorage.setItem('interestSettings', JSON.stringify(settings)); 
+    }
+    // let transactions = JSON.parse(localStorage.getItem('transactions'));
+    // window.localStorage.setItem('transactions', JSON.stringify(transactions));
+    // localStorage.setItem('interestSettings', JSON.stringify(settings));
+    
     // loadInterestRateSettings();
 }
 
 //Adds constant transactions to table
 function loadTransactions() {
-    let transactions = JSON.parse(window.localStorage.getItem('transactions'));
+    let transactions = JSON.parse(window.localStorage.getItem('transactions'));    
     for (var i = 0; i < transactions.length; i++) {
         appendTransactionToTable(transactions[i].number, transactions[i].date, transactions[i].transaction, transactions[i].description);
     }
@@ -76,6 +86,9 @@ function updateInterestRateSettings() {
 
 function setupInterestAccrual() {
     if (interestSwitch.checked) {
+        if (interestInterval) {
+            clearInterval(interestInterval);
+        }
         interestInterval = setInterval(accruedInterest, 5000);
     } else {
         clearInterval(interestInterval);
@@ -88,7 +101,7 @@ settingsSaveBtn.addEventListener('click', () => {
 });
 
 function accruedInterest() {
-    let rate = parseFloat(document.getElementById('interestFormControlInput').value)/100;
+    let rate = parseFloat(JSON.parse(localStorage.getItem('interestSettings')).interestRate)/100;
     let currBal = currentBalance;
     let intTransaction = {
         date: new Date(Date.now()).toLocaleString().split(',')[0],
@@ -118,8 +131,9 @@ function appendTransactionToTable(number, date, transaction, description) {
 //Takes input from deposit modal and converts to add to transaction table
 function deposit(date, transaction, description) {
     let transactions = JSON.parse(localStorage.getItem('transactions'));
+    let length = transactions.length ?? 0;
     let newTransaction = {
-        number: transactions.length + 1,
+        number: length + 1,
         date: date,
         transaction: transaction,
         description: description
@@ -133,8 +147,9 @@ function deposit(date, transaction, description) {
 //Takes input from withdraw modal and adds converts to add to transaction table
 function withdraw(date, transaction, description) {
     let transactions = JSON.parse(localStorage.getItem('transactions'));
+    let length = transactions.length ?? 0;
     let newTransaction = {
-        number: transactions.length + 1,
+        number: length + 1,
         date: date,
         transaction: -transaction,
         description: description
@@ -149,6 +164,9 @@ function withdraw(date, transaction, description) {
 function updateBalance() {
     let balanceTag = document.getElementById('balance');
     let transactions = JSON.parse(localStorage.getItem("transactions"));
+    if (transactions == null) {
+        return;
+    }
     let balance = 0;
     for (i = 0; i < transactions.length; i++) {
         balance += transactions[i].transaction;
